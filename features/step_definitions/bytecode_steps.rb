@@ -24,6 +24,6 @@ Then /^the bytecode should be:$/ do |string|
   g = TestGenerator.new
   @compiler.compile(g)
 
-  g.lines.should == string.lines.map(&:strip).join("\n")
+  g.lines.strip.should == string.lines.map(&:strip).join("\n")
 end
 

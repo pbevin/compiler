@@ -82,6 +82,14 @@ class Compiler
       g.slv var, working_reg
     end
 
+    def process_iasgn(exp)
+      var = exp.shift
+      val = exp.shift
+
+      compile_code_for val
+      g.siv var, working_reg
+    end
+
     def process_lvar(exp)
       g.llv working_reg, exp.shift
     end
@@ -110,6 +118,59 @@ class Compiler
       compile_code_for body
       g.bra loop_top
       loop_end.set!
+    end
+
+    def process_class(exp)
+      class_name = exp.shift
+      parent_class = exp.shift
+      class_body = exp.shift
+
+      if parent_class
+        compile_code_for parent_class
+        g.open_class class_name.to_s, working_reg
+      else
+        g.open_class class_name.to_s
+      end
+      compile_code_for class_body
+      g.end_class
+    end
+
+    def process_const(exp)
+      g.ldc working_reg, exp.shift
+    end
+
+    def process_scope(exp)
+      compile_code_for exp.shift
+    end
+
+    def process_super(exp)
+      g.super
+    end
+
+    def process_defn(exp)
+      method_name = exp.shift
+      args = exp.shift
+      body = exp.shift
+
+      g.open_method method_name.to_s
+      compile_code_for args
+      compile_code_for body
+      g.end_method
+    end
+
+    def process_block_pass(exp)
+      g.block_pass exp.shift.inspect
+    end
+
+    def process_cdecl(exp)
+      raise exp.inspect
+    end
+
+    def process_args(exp)
+      while lvar = exp.shift
+        g.pop working_reg
+        g.slv lvar
+      end
     end
 
     private
@@ -169,9 +230,16 @@ class TestGenerator < BasicObject
   end
 
   def lines
+    buf = ''
     code.map do |method, *args|
-      "#{method} #{args.map(&:inspect).join(', ')}"
-    end.join("\n")
+      buf << method.to_s
+      if args.any?
+        buf << ' '
+        buf << args.map(&:inspect).join(', ')
+      end
+      buf << "\n"
+    end
+    return buf
   end
 
   def nextsym

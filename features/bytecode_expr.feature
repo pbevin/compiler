@@ -130,3 +130,76 @@ Feature: Bytecode generation for expressions
     ldc :r1, :require
     call 1
     """
+
+  Scenario: class declaration (empty)
+    When I compile the expression:
+    """
+    class Person
+    end
+    """
+    Then the sexp should be:
+    """
+    s(:class, :Person, nil, s(:scope))
+    """
+    And the bytecode should be:
+    """
+    open_class "Person"
+    end_class
+    """
+
+  Scenario: class declaration (with a method)
+    When I compile the expression:
+    """
+    class Person
+      def hello(who)
+        puts "Hello, " + who
+      end
+    end
+    """
+    Then the sexp should be:
+    """
+    s(:class, :Person, nil,
+      s(:scope,
+        s(:defn,
+          :hello,
+          s(:args, :who),
+          s(:scope,
+            s(:block,
+              s(:call,
+                nil,
+                :puts,
+                s(:arglist,
+                  s(:call,
+                    s(:str, "Hello, "),
+                    :+,
+                    s(:arglist, s(:lvar, :who))))))))))
+    """
+    And the bytecode should be:
+    """
+    open_class "Person"
+    open_method "hello"
+    pop :r0
+    slv :who
+    ldc :r0, "Hello, "
+    llv :r1, :who
+    add :r0, :r1
+    push :r0
+    ldc :r0, nil
+    ldc :r1, :puts
+    call 1
+    end_method
+    end_class
+    """
+
+  Scenario: Instance variable assignment
+    When I compile the expression "@age = 22"
+    Then the sexp should be:
+    """
+    s(:iasgn, :@age, s(:lit, 22))
+    """
+    And the bytecode should be:
+    """
+    ldc :r0, 22
+    siv :@age, :r0
+    """
+
