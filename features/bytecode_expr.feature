@@ -112,3 +112,21 @@ Feature: Bytecode generation for expressions
     call 1
     """
 
+
+  Scenario: require() call
+    When I compile the expression:
+    """
+    require "rubygems"
+    """
+    Then the sexp should be:
+    """
+    s(:call, nil, :require, s(:arglist, s(:str, "rubygems")))
+    """
+    And the bytecode should be:
+    """
+    ldc :r0, "rubygems"
+    push :r0
+    ldc :r0, nil
+    ldc :r1, :require
+    call 1
+    """
